@@ -1,65 +1,124 @@
-# Jogo das Pedras — Dynamic Programming (CP04)
+# Jogo das Pedras — Recursão e Estratégias (CP04)
 
-Implementação das soluções pedidas no **Checkpoint 04**: função recursiva pura e função recursiva com memoização (via `lru_cache` e via `dict`). Também incluímos uma versão **DP iterativa** (bottom‑up) e uma função auxiliar para **sugerir a melhor jogada**.
+Este projeto implementa e compara **várias versões recursivas** para o clássico *Jogo das Pedras* (cada jogada remove `1`, `2` ou `3` pedras; **vence** quem deixa o oponente **sem jogada**).  
+O objetivo pedagógico é mostrar **diferentes abordagens recursivas**, seus **trade‑offs** de desempenho e **profundidade de pilha**, incluindo técnicas como **trampolim** e **redução por módulo**.
 
-## Como rodar
+> **Padrão do jogo:** posições **perdedoras** são exatamente os **múltiplos de 4**.
 
-Requer **Python 3.10+**.
+---
+
+## Requisitos
+
+- Python **3.10+**
+
+---
+
+## Modos implementados (funções)
+
+Arquivo principal: `pedras.py`
+
+| Modo CLI (`--mode`) | Função               | Estilo                         | Complexidade (tempo) | Pilha | Observações |
+|---|---|---|---:|---:|---|
+| `rec`        | `vence_rec(n)`        | Recursiva pura                  | Exponencial          | ↑↑↑   | Didática; fica muito lenta p/ `n` grande. |
+| `memo`       | `vence_memo_lru(n)`   | Recursiva + `lru_cache`         | O(n)                 | ↑     | Pode exigir `setrecursionlimit` p/ `n` muito grande. |
+| `dict`       | `vence_memo_dict(n)`  | Recursiva + dicionário          | O(n)                 | ↑     | Alternativa à `lru_cache`. |
+| `dp`         | `vence_dp_iter(n)`    | Iterativa (bottom‑up)           | O(n)                 | –     | Não é recursiva; base de comparação. |
+| `trampolim`  | `vence_trampolim(n)`  | **Recursiva com trampolim**     | O(n/4)\*             | **Constante** | Retorna *thunks*; laço externo executa. |
+| `modulo`     | `vence_mod(n)`        | **Recursiva por módulo (mod 4)**| O(1)                 | O(1)  | Usa periodicidade; 1 chamada recursiva p/ `n % 4`. |
+| `verdadeira` | `vence_verdadeira(n)` | **Recursiva “–4”**              | O(n/4)               | ↑     | “Recursão de verdade” reduzindo por 4. |
+
+\* No `trampolim`, o número de *passos* é ~`n/4` (redução por 4), **sem** crescimento da pilha.
+
+Também há a função utilitária:
+
+- `melhor_jogada(n, solver)` → sugere `1`, `2` ou `3` se houver jogada vencedora.
+
+---
+
+## Uso (CLI)
 
 ```bash
-cd jogo_das_pedras
-python pedras.py 4 --mode rec     # recursiva pura
-python pedras.py 10000 --mode memo  # memo com lru_cache (rápido)
-python pedras.py 25 --mode dp       # DP iterativa
+# recursiva pura (lenta p/ n grande)
+python pedras.py 16 --mode rec
+
+# recursiva com memoização (lru_cache)
+python pedras.py 10000 --mode memo
+
+# recursiva com dicionário (memo explícita)
+python pedras.py 10000 --mode dict
+
+# DP iterativa (referência, não recursiva)
+python pedras.py 10000 --mode dp
+
+# recursiva com trampolim (sem crescimento de pilha)
+python pedras.py 10000 --mode trampolim
+
+# recursiva via periodicidade (mod 4) — profundidade O(1)
+python pedras.py 10000 --mode modulo
+
+# recursão "verdadeira" reduzindo por 4 (profundidade ~ n/4)
+python pedras.py 10000 --mode verdadeira
 ```
 
 Saída típica:
 
-``` simple text
-n=25: posição VENCEDORA  |  modo=memo  |  0.10 ms
+```bash
+n=25: posição VENCEDORA  |  modo=memo  |  0.12 ms
 → Jogada sugerida: tirar 1 pedra(s).
 ```
 
-## Funções principais
+### Opções
 
-- `vence_rec(n) -> bool`: recursão pura (exponencial).  
-- `@lru_cache vence_memo_lru(n) -> bool`: recursão com memoização (rápido).  
-- `vence_memo_dict(n, memo) -> bool`: memoização manual com dicionário.  
-- `vence_dp_iter(n) -> bool`: bottom-up (O(n)).  
-- `melhor_jogada(n, solver) -> int|None`: retorna 1, 2 ou 3 se houver jogada vencedora.
+- `--no-suggest` → não exibe a jogada sugerida.
 
-## Ideia (resumo)
+---
 
-Uma posição é **vencedora** se **existe** um movimento (tirar 1, 2 ou 3) que deixa o oponente em posição **perdedora**.  
-Formalmente: `V(n) = any(not V(n-k) for k in {1,2,3} if n-k>=0)` com `V(0)=False`.  
-Isso gera o conhecido padrão de que os múltiplos de **4** são perdedores (0,4,8,12,16, ...).
+## Importando como biblioteca
 
-## Complexidade
+```python
+from pedras import (
+    vence_rec, vence_memo_lru, vence_memo_dict,
+    vence_dp_iter, vence_trampolim, vence_mod, vence_verdadeira,
+    melhor_jogada,
+)
 
-- Recursiva pura: **exponencial** (piora rapidamente).  
-- Recursiva com memo/DP: **O(n)** tempo e **O(n)** memória.
-
-## Testes rápidos
-
-```bash
-python - << 'PY'
-from pedras import vence_rec, vence_memo_lru, vence_dp_iter
-tab = {0:False,1:True,2:True,3:True,4:False,5:True,6:True,7:True,8:False,9:True,10:True,11:True,12:False,13:True,14:True,15:True,16:False}
-print(all(vence_memo_lru(n)==tab[n] for n in tab))
-print(vence_memo_lru(10_001))  # deve ser True (não múltiplo de 4)
-PY
+n = 25
+print(vence_trampolim(n))           # True
+print(melhor_jogada(n, vence_mod))  # 1, 2 ou 3
 ```
 
-## Estrutura do repositório
+---
 
-``` simpletext
-jogo_das_pedras/
-├─ pedras.py
-└─ README.md
+## Correção conhecida (padrão do jogo)
+
+Para todos os `n >= 0`:
+
+- `vence_mod(n)` é verdadeiro **sse** `n % 4 != 0`.
+
+Teste rápido:
+
+```python
+assert all( (n % 4 != 0) == vence_mod(n) for n in range(0, 1000) )
 ```
 
-## Integrantes
+---
 
-- RM558468 — Abner de Paiva Barbosa
-- RM555201 — Fernando Luiz Silva Antonio
-- RM554812 — Thomas de Almeida Reichmann
+## Testes rápidos (exemplo)
+
+```python
+# 0..15 (sequência esperada: F, V, V, V, F, V, V, V, F, ...)
+esperado = [False, True, True, True] * 4
+funs = [vence_rec, vence_memo_lru, vence_memo_dict, vence_trampolim, vence_mod, vence_verdadeira]
+for f in funs:
+    got = [f(i) for i in range(16)]
+    assert got == esperado, f"Falhou em {f.__name__}: {got}"
+```
+
+---
+
+## Conceitos chave
+
+- **Trampolim (trampoline):** técnica que preserva o estilo recursivo sem crescer a pilha. A função retorna *thunks* (funções sem argumento com o “próximo passo”), e um laço os executa até obter um valor final.
+- **Periodicidade (módulo):** neste jogo, a estrutura de ganhos/perdas se repete a cada 4; por isso, podemos saltar diretamente para `n % 4`.
+- **Memoização:** evita recomputações em subproblemas; pode ser via `functools.lru_cache` ou dicionário interno.
+- **DP iterativa:** alternativa não recursiva que constrói soluções de baixo para cima.
