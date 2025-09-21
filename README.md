@@ -6,6 +6,12 @@ O objetivo pedagógico é mostrar **diferentes abordagens recursivas**, seus **t
 > **Padrão do jogo:** posições **perdedoras** são exatamente os **múltiplos de 4**.
 
 ---
+## Integrantes
+- Abner de Paiva Barbosa RM: 558468
+- Fernando Luiz Silva Antonio RM: 555201
+- Thomas de Almeida Reichmann RM: 554812
+
+---
 
 ## Requisitos
 
